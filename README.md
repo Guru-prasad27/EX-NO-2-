@@ -112,8 +112,6 @@ int main(){
 }
 ```
 
-
-
-
 Output:
+
 <img width="575" height="600" alt="image" src="https://github.com/user-attachments/assets/9841d0ec-ffd2-4e11-a7e8-c2e750adcc52" />
