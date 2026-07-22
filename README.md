@@ -35,9 +35,85 @@ STEP-5: Display the obtained cipher text.
 
 
 Program:
+```
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
+char t[5][5]; int u[26];
+
+void table(char k[]){
+    int i,r=0,c=0;
+    for(i=0;k[i];i++){
+        char ch=tolower(k[i]);
+        if(ch=='j') ch='i';
+        if(ch>='a'&&ch<='z'&&!u[ch-'a']){
+            u[ch-'a']=1; t[r][c++]=ch;
+            if(c==5) r++,c=0;
+        }
+    }
+    for(char ch='a';ch<='z';ch++){
+        if(ch=='j'||u[ch-'a']) continue;
+        t[r][c++]=ch;
+        if(c==5) r++,c=0;
+    }
+}
+
+void pos(char ch,int *r,int *c){
+    if(ch=='j') ch='i';
+    for(int i=0;i<5;i++)
+        for(int j=0;j<5;j++)
+            if(t[i][j]==ch){*r=i;*c=j;}
+}
+
+void enc(char p[],char c[]){
+    int i,r1,c1,r2,c2,k=0;
+    for(i=0;p[i]&&p[i+1];i+=2){
+        pos(p[i],&r1,&c1); pos(p[i+1],&r2,&c2);
+        if(r1==r2){
+            c[k++]=t[r1][(c1+1)%5];
+            c[k++]=t[r2][(c2+1)%5];
+        } else if(c1==c2){
+            c[k++]=t[(r1+1)%5][c1];
+            c[k++]=t[(r2+1)%5][c2];
+        } else {
+            c[k++]=t[r1][c2];
+            c[k++]=t[r2][c1];
+        }
+    }
+    c[k]=0;
+}
+
+int main(){
+    char p[50],k[50],c[50];
+
+    printf("Enter Plain Text: ");
+    fgets(p,50,stdin);
+
+    printf("Enter Key: ");
+    fgets(k,50,stdin);
+
+    for(int i=0;p[i];i++)
+        if(p[i]!=' ') p[i]=tolower(p[i]);
+
+    table(k); enc(p,c);
+
+    printf("\nPlain Text : %s",p);
+    printf("Key : %s",k);
+
+    printf("\nKey Table:\n");
+    for(int i=0;i<5;i++){
+        for(int j=0;j<5;j++)
+            printf("%c ",t[i][j]);
+        printf("\n");
+    }
+
+    printf("\nEncrypted Text : %s",c);
+}
+```
 
 
 
 
 Output:
+<img width="575" height="600" alt="image" src="https://github.com/user-attachments/assets/9841d0ec-ffd2-4e11-a7e8-c2e750adcc52" />
