@@ -207,3 +207,5 @@ Output:
 
 <img width="498" height="505" alt="image" src="https://github.com/user-attachments/assets/056defd5-08f4-4abe-9336-341b2996738a" />
 
+## RESULT:
+Thus the program was executed successfully.
