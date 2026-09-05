@@ -37,175 +37,180 @@ STEP-5: Display the obtained cipher text.
 
 Program:
 ```
-
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
-char t[5][5];
-int u[26];
+char matrix[5][5];
 
-void table(char k[])
+void createMatrix(char key[])
 {
-    int i, r = 0, c = 0;
-
-    for(i = 0; k[i]; i++)
+    int used[26] = {0};
+    int r = 0, c = 0;
+    
+    // Insert key characters
+    for (int i = 0; key[i] != '\0'; i++)
     {
-        char ch = tolower(k[i]);
-
-        if(ch == 'j')
-            ch = 'i';
-
-        if(ch >= 'a' && ch <= 'z' && !u[ch - 'a'])
+        char ch = tolower(key[i]);
+        if (ch >= 'a' && ch <= 'z' && ch != 'j')
         {
-            u[ch - 'a'] = 1;
-            t[r][c++] = ch;
-
-            if(c == 5)
-                r++, c = 0;
+            if (!used[ch - 'a'])
+            {
+                matrix[r][c++] = ch;
+                used[ch - 'a'] = 1;
+                if (c == 5) { c = 0; r++; }
+            }
         }
     }
-
-    for(char ch = 'a'; ch <= 'z'; ch++)
+    
+    // Fill remaining letters
+    for (char ch = 'a'; ch <= 'z'; ch++)
     {
-        if(ch == 'j' || u[ch - 'a'])
-            continue;
-
-        t[r][c++] = ch;
-
-        if(c == 5)
-            r++, c = 0;
+        if (ch != 'j' && !used[ch - 'a'])
+        {
+            matrix[r][c++] = ch;
+            if (c == 5) { c = 0; r++; }
+        }
     }
 }
 
-void pos(char ch, int *r, int *c)
+void findPos(char ch, int *row, int *col)
 {
-    if(ch == 'j')
-        ch = 'i';
-
-    for(int i = 0; i < 5; i++)
-        for(int j = 0; j < 5; j++)
-            if(t[i][j] == ch)
+    if (ch == 'j') ch = 'i';
+    
+    for (int i = 0; i < 5; i++)
+        for (int j = 0; j < 5; j++)
+            if (matrix[i][j] == ch)
             {
-                *r = i;
-                *c = j;
+                *row = i;
+                *col = j;
+                return;
             }
 }
 
-/* Encryption */
-void enc(char p[], char c[])
+void prepareText(char text[], char prepared[])
 {
-    int i, r1, c1, r2, c2, k = 0;
-
-    for(i = 0; p[i] && p[i + 1]; i += 2)
+    int len = 0;
+    
+    for (int i = 0; text[i] != '\0'; i++)
     {
-        pos(p[i], &r1, &c1);
-        pos(p[i + 1], &r2, &c2);
-
-        if(r1 == r2)
+        if (isalpha(text[i]))
         {
-            c[k++] = t[r1][(c1 + 1) % 5];
-            c[k++] = t[r2][(c2 + 1) % 5];
-        }
-        else if(c1 == c2)
-        {
-            c[k++] = t[(r1 + 1) % 5][c1];
-            c[k++] = t[(r2 + 1) % 5][c2];
-        }
-        else
-        {
-            c[k++] = t[r1][c2];
-            c[k++] = t[r2][c1];
+            char ch = tolower(text[i]);
+            if (ch == 'j') ch = 'i';
+            prepared[len++] = ch;
         }
     }
-
-    c[k] = 0;
+    
+    // Add 'x' between repeated letters
+    char temp[200];
+    int t = 0;
+    for (int i = 0; i < len; i++)
+    {
+        temp[t++] = prepared[i];
+        if (i + 1 < len && prepared[i] == prepared[i + 1])
+            temp[t++] = 'x';
+    }
+    
+    // Make even length
+    if (t % 2 != 0) temp[t++] = 'x';
+    temp[t] = '\0';
+    
+    strcpy(prepared, temp);
 }
 
-/* Decryption */
-void dec(char c[], char p[])
+void encrypt(char text[], char cipher[])
 {
-    int i, r1, c1, r2, c2, k = 0;
-
-    for(i = 0; c[i] && c[i + 1]; i += 2)
+    char prepared[200];
+    prepareText(text, prepared);
+    
+    int k = 0;
+    for (int i = 0; prepared[i] != '\0'; i += 2)
     {
-        pos(c[i], &r1, &c1);
-        pos(c[i + 1], &r2, &c2);
-
-        if(r1 == r2)
+        int r1, c1, r2, c2;
+        findPos(prepared[i], &r1, &c1);
+        findPos(prepared[i + 1], &r2, &c2);
+        
+        if (r1 == r2)  // Same row
         {
-            p[k++] = t[r1][(c1 + 4) % 5];
-            p[k++] = t[r2][(c2 + 4) % 5];
+            cipher[k++] = matrix[r1][(c1 + 1) % 5];
+            cipher[k++] = matrix[r2][(c2 + 1) % 5];
         }
-        else if(c1 == c2)
+        else if (c1 == c2)  // Same column
         {
-            p[k++] = t[(r1 + 4) % 5][c1];
-            p[k++] = t[(r2 + 4) % 5][c2];
+            cipher[k++] = matrix[(r1 + 1) % 5][c1];
+            cipher[k++] = matrix[(r2 + 1) % 5][c2];
+        }
+        else  // Rectangle
+        {
+            cipher[k++] = matrix[r1][c2];
+            cipher[k++] = matrix[r2][c1];
+        }
+    }
+    cipher[k] = '\0';
+}
+
+void decrypt(char cipher[], char plain[])
+{
+    int k = 0;
+    for (int i = 0; cipher[i] != '\0'; i += 2)
+    {
+        int r1, c1, r2, c2;
+        findPos(cipher[i], &r1, &c1);
+        findPos(cipher[i + 1], &r2, &c2);
+        
+        if (r1 == r2)
+        {
+            plain[k++] = matrix[r1][(c1 + 4) % 5];
+            plain[k++] = matrix[r2][(c2 + 4) % 5];
+        }
+        else if (c1 == c2)
+        {
+            plain[k++] = matrix[(r1 + 4) % 5][c1];
+            plain[k++] = matrix[(r2 + 4) % 5][c2];
         }
         else
         {
-            p[k++] = t[r1][c2];
-            p[k++] = t[r2][c1];
+            plain[k++] = matrix[r1][c2];
+            plain[k++] = matrix[r2][c1];
         }
     }
-
-    p[k] = 0;
+    plain[k] = '\0';
 }
 
 int main()
 {
-    char p[50], k[50], c[50], d[50];
-
-    printf("Enter Plain Text: ");
-    fgets(p, 50, stdin);
-
-    printf("Enter Key: ");
-    fgets(k, 50, stdin);
-
-    /* Convert plaintext to lowercase and remove spaces/newline */
-    int n = 0;
-
-    for(int i = 0; p[i]; i++)
+    char key[50], plaintext[100], ciphertext[200], decrypted[200];
+    
+    printf("Enter keyword: ");
+    scanf("%s", key);
+    printf("Enter plaintext: ");
+    scanf("%s", plaintext);
+    
+    createMatrix(key);
+    
+    printf("\nKey Matrix:\n");
+    for (int i = 0; i < 5; i++)
     {
-        if(isalpha(p[i]))
-            p[n++] = tolower(p[i]);
-    }
-
-    p[n] = '\0';
-
-    /* Remove newline from key */
-    k[strcspn(k, "\n")] = '\0';
-
-    table(k);
-
-    enc(p, c);
-    dec(c, d);
-
-    printf("\nPlain Text     : %s", p);
-    printf("\nKey             : %s", k);
-
-    printf("\n\nKey Table:\n");
-
-    for(int i = 0; i < 5; i++)
-    {
-        for(int j = 0; j < 5; j++)
-            printf("%c ", t[i][j]);
-
+        for (int j = 0; j < 5; j++)
+            printf("%c ", matrix[i][j]);
         printf("\n");
     }
-
-    printf("\nEncrypted Text : %s", c);
-    printf("\nDecrypted Text : %s\n", d);
-
+    
+    encrypt(plaintext, ciphertext);
+    printf("\nEncrypted: %s\n", ciphertext);
+    
+    decrypt(ciphertext, decrypted);
+    printf("Decrypted: %s\n", decrypted);
+    
     return 0;
 }
-
 
 ```
 
 Output:
+<img width="1838" height="686" alt="image" src="https://github.com/user-attachments/assets/a53bce70-170f-44ce-bff0-d47e33972021" />
 
-<img width="498" height="505" alt="image" src="https://github.com/user-attachments/assets/056defd5-08f4-4abe-9336-341b2996738a" />
 
 ## RESULT:
 Thus the program was executed successfully.
